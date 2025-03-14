@@ -1,3 +1,4 @@
+//sets up express app, imports necessary packages
 import compression from "compression";
 import express from "express";
 import morgan from "morgan";
@@ -7,10 +8,11 @@ import mysql from "mysql2";
 const BUILD_PATH = "./build/server/index.js";
 const DEVELOPMENT = process.env.NODE_ENV === "development";
 const PORT = Number.parseInt(process.env.PORT || "3000");
-
+//creates express server (app), enable JSON parsing for handling request 
 const app = express();
 app.use(express.json()); // built-in middleware json parser
 
+//connect to MySQL DB
 const db = mysql.createConnection({
   host: 't14mysqldb.mysql.database.azure.com',
   user: 'Team14',
@@ -19,7 +21,8 @@ const db = mysql.createConnection({
 });
 
 db.connect()
-
+//handles API request
+//inserts new memeber
 app.post('/api/insert', (req, res) => {
   const {name, email} = req.body;
   const classID = 0;
@@ -35,7 +38,7 @@ app.post('/api/insert', (req, res) => {
   return;
 })
 
-// RETURNS ALL MEMBERS
+// RETURNS/retrives ALL MEMBERS
 app.get('/api/members', (req,res) => {
   db.query('SELECT * FROM Members', (err, results) => {
       if (err) {
@@ -46,7 +49,7 @@ app.get('/api/members', (req,res) => {
       res.json(results);
   });
 });
-
+//retrieve member provleges
 // RETURNS MEMBER ID, NAME, THEIR CLASSIFICATION, AND LENDING PRIVILEGES
 app.get('/api/memberprivileges', (req, res) => {
   db.query('SELECT Members.MemberID, Members.MemberName, MemberClass.ClassName, MemberClass.LendingPeriod, MemberClass.ItemLimit, MemberClass.MediaItemLimit FROM Members INNER JOIN MemberClass ON Members.ClassID=MemberClass.ClassID', (err, results) => {
@@ -117,6 +120,7 @@ if (DEVELOPMENT) {
       next(error);
     }
   });
+  //production mode, serves static files
 } else {
   console.log("Starting production server");
   app.use(
@@ -126,7 +130,7 @@ if (DEVELOPMENT) {
   app.use(express.static("build/client", { maxAge: "1h" }));
   app.use(await import(BUILD_PATH).then((mod) => mod.app));
 }
-
+//starts server
 app.use(morgan("tiny"));
 
 app.listen(PORT, () => {
